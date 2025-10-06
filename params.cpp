@@ -94,23 +94,11 @@ void Config::Print() {
 
   std::cout << "dt: " << dt << '\n';
 
-  std::cout << "a-axis: ";
-  for (const auto &v : box_a) {
-    std::cout << v << ' ';
-  }
-  std::cout << '\n';
+  std::cout << "a-axis: " << box_a << '\n';
 
-  std::cout << "b-axis: ";
-  for (const auto &v : box_b) {
-    std::cout << v << ' ';
-  }
-  std::cout << '\n';
+  std::cout << "b-axis: " << box_b << '\n';
 
-  std::cout << "c-axis: ";
-  for (const auto &v : box_c) {
-    std::cout << v << ' ';
-  }
-  std::cout << '\n';
+  std::cout << "c-axis: " << box_c << '\n';
 
   if (slabs == true) {
     std::cout << "nslabs: " << nslabs << '\n';
