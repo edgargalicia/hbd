@@ -1,6 +1,6 @@
-#include "hbmap.h"
 #include "logic.h"
 #include <Math/Matrix.h>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <params.h>
@@ -14,7 +14,7 @@ void Logic::Init() {
   std::cout << "Read settings of trajectory\n";
   conf.Print();
 
-  Box box = InitBox(conf.Box());
+  box = InitBox(conf.Box());
 
   std::cout << "===========================\n";
   std::cout << "Read topology\n";
@@ -29,7 +29,7 @@ void Logic::Init() {
   // grp = String2IntList(conf.GetGroup2());
   // std::cout << "Group 2 size: " << grp.size() << std::endl;
 
-  HBMap hbmap(conf.GetGroup1(), topo);
+  hbmap = HBMap(conf.GetGroup1(), topo);
   hbmap.Print();
   hbmap = HBMap{conf.GetGroup2(), topo};
   hbmap.Print();
@@ -43,15 +43,43 @@ void Logic::Run() {
     throw std::runtime_error( "Failed to open trajectory file: " + conf.TrajName() );
   }
 
+  int hbond = 0;
+  float d_ha;
+  float ang;
   std::cout << "\tAssess presence of bonds\n";
   std::cout << "\tGather statistics\n";
-  while (frame.Read(infile)) {
+  // while (frame.Read(infile)) {
+  for (size_t i = 0; i != 1; ++i) {
+    frame.Read(infile);
     if (frame.Step % 1000 == 0) {
       std::cout << "Frame step: " << frame.Step << '\r' << std::flush;
     }
+
+    // std::cout << "MAP\n";
+    // std::cout << hbmap.getAccMap()[140] << '\n';
+    // std::cout << hbmap.getAcceptors()[28] << '\n';
+    // std::cout << hbmap.getDonMap()[115] << '\n';
+    // std::cout << hbmap.getDonors()[3] << '\n';
+    // std::cout << hbmap.getDonUno().find(115)->first << '\n';
+    // std::cout << hbmap.getDonUno().find(115)->second[0] << '\n';
+    // std::cout << hbmap.getDonUno().find(115)->second[1] << '\n';
+    // std::cout << isHBonded(115, 179, 140, frame.Coords, box, d_ha, ang) << '\n';
+
+    for(auto acc : hbmap.getAcceptors()) {
+      for(auto &don : hbmap.getDonUno()) {
+        for(const auto &prot : don.second) {
+          if (isHBonded(don.first, prot, acc, frame.Coords, box, d_ha, ang) ) {
+            std:: cout << acc << " - " << don.first << " : " << prot << " dist: " << d_ha << " ang: " << ang/3.1416*180 << '\n';
+            ++hbond;
+          }
+        }
+      }
+    }
+
   }
 
   std::cout << std::endl;
+  std::cout << "Intra hbonds: " << hbond << '\n';
 }
 
 void Logic::Finish() {

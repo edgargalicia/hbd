@@ -44,17 +44,17 @@ Config::Config(std::string filename) {
 
   std::getline(ifile, line);
   std::istringstream iss(line);
-  iss >> box_a[0] >> box_a[1] >> box_a[2];
+  iss >> axis_a[0] >> axis_a[1] >> axis_a[2];
 
   std::getline(ifile, line);
   iss.clear();
   iss.str(line);
-  iss >> box_b[0] >> box_b[1] >> box_b[2];
+  iss >> axis_b[0] >> axis_b[1] >> axis_b[2];
 
   std::getline(ifile, line);
   iss.clear();
   iss.str(line);
-  iss >> box_c[0] >> box_c[1] >> box_c[2];
+  iss >> axis_c[0] >> axis_c[1] >> axis_c[2];
 
   std::getline(ifile, line);
   slabs = std::stoi(line);
@@ -94,11 +94,11 @@ void Config::Print() {
 
   std::cout << "dt: " << dt << '\n';
 
-  std::cout << "a-axis: " << box_a << '\n';
+  std::cout << "a-axis: " << axis_a << '\n';
 
-  std::cout << "b-axis: " << box_b << '\n';
+  std::cout << "b-axis: " << axis_b << '\n';
 
-  std::cout << "c-axis: " << box_c << '\n';
+  std::cout << "c-axis: " << axis_c << '\n';
 
   if (slabs == true) {
     std::cout << "nslabs: " << nslabs << '\n';

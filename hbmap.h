@@ -6,18 +6,24 @@
 class Topology;
 class HBMap {
 private:
-  std::vector<int> Acceptors;
-  std::vector<int> MapAcceptors;
-  std::unordered_map<int, std::vector<int>> Donors;
-  std::vector<int> MapDonors;
+  std::vector<int> acceptors;
+  std::vector<int> mapAcceptors;
+  std::unordered_map<int, std::vector<int>> donors;
+  std::vector<int> donorOrder;
+  std::vector<int> mapDonors;
 
 public:
+  HBMap() = default;
   HBMap(const std::string &str, const Topology &topo);
   ~HBMap() = default;
   int TotalProtons() const;
   void Print();
   void FindDonors(const Topology &topo);
-  std::unordered_map<int, std::vector<int>> DonorToProtons() const { return Donors; }
+  std::vector<int> getAcceptors() const { return acceptors; }
+  std::vector<int> getDonors() const { return donorOrder; }
+  std::vector<int> getAccMap() const { return mapAcceptors; }
+  std::vector<int> getDonMap() const { return mapDonors; }
+  const std::unordered_map<int, std::vector<int>>& getDonUno() const { return donors; }
 };
 
 std::vector<int> Mapping(const std::vector<int> &list, int natoms);
@@ -26,4 +32,4 @@ std::vector<int> Match(const std::vector<int> &atomList, const Topology &topolog
 
 class Vec3;
 class Box;
-bool isHBonded( int d, int h, int a, Vec3 *x[], const Box &box, float &d_ha, float &ang );
+int isHBonded( int d, int h, int a, std::vector<Math::Vec3> &x, const Box &box, float &d_ha, float &ang );

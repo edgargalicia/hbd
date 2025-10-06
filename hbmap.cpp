@@ -13,8 +13,11 @@ bool isAcceptor(const std::string& name) {
     return name == "n" || name == "o"; // extend if needed
 }
 
-float rc2 = 3.5*3.5;
-float ccut = 30;
+constexpr float rc2 = 3.5*3.5;
+constexpr double Pi = 3.14159265358979323846264338327950288;
+constexpr double DEG2RAD = ( Pi / 180.0 );
+constexpr float acut = 30;
+const float ccut = std::cos( acut * DEG2RAD );
 
 double invsqrt( double x ) { return 1.0 / std::sqrt( x ); }
 
@@ -57,23 +60,24 @@ HBMap::HBMap(const std::string &str, const Topology &topo) {
   auto preList = String2IntList(str);
   for(auto var : preList) {
     if (isAcceptor(topo.AtomName()[var])) {
-      Acceptors.push_back(var);
+      acceptors.push_back(var);
     }
   }
-  MapAcceptors = Mapping(Acceptors, topo.AtomName().size());
+  mapAcceptors = Mapping(acceptors, topo.AtomName().size());
   FindDonors(topo);
+  mapDonors = Mapping(donorOrder, topo.AtomName().size());
 }
 
 int HBMap::TotalProtons() const {
   int sum = 0;
-  for(auto Protons : Donors) {
+  for(auto Protons : donors) {
       sum += Protons.second.size();
   }
   return sum;
 }
 
 void HBMap::FindDonors(const Topology &topo) {
-  std::unordered_set<int> lookup(Acceptors.begin(), Acceptors.end());
+  std::unordered_set<int> lookup(acceptors.begin(), acceptors.end());
   for(const auto &bond : topo.Bonds()) {
     int a = bond.first;
     int b = bond.second;
@@ -81,9 +85,11 @@ void HBMap::FindDonors(const Topology &topo) {
     if (lookup.count(a) == 0 && lookup.count(b) == 0) continue;
 
     if ( isProton(topo.AtomName()[b]) ) {
-      Donors[a].push_back(b);
+      if (donors.find(a) == donors.end()) donorOrder.push_back(a);
+      donors[a].push_back(b);
     } else if ( isProton(topo.AtomName()[a]) ) {
-      Donors[b].push_back(a);
+      if (donors.find(b) == donors.end()) donorOrder.push_back(b);
+      donors[b].push_back(a);
     }
   }
 }
@@ -107,8 +113,8 @@ std::vector<int> Match(const std::vector<int> &atomList, const Topology &topolog
 }
 
 void HBMap::Print() {
-  std::cout << "Acceptors size: " << Acceptors.size() << '\n';
-  std::cout << "Donors size: " << Donors.size() << '\n';
+  std::cout << "Acceptors size: " << acceptors.size() << '\n';
+  std::cout << "Donors size: " << donors.size() << '\n';
   std::cout << "Protons size: " << TotalProtons() << '\n';
 
   // int mono = 0;
@@ -128,7 +134,7 @@ void HBMap::Print() {
   // std::cout << "Tri-Protons size: " << tri << '\n';
 }
 
-bool isHBonded( int d, int h, int a, Math::Vec3 *x[], const Box &box,
+int isHBonded( int d, int h, int a, std::vector<Math::Vec3> &x, const Box &box,
               float &d_ha, float &ang ) {
   float rda2;
   float ca;
@@ -138,17 +144,17 @@ bool isHBonded( int d, int h, int a, Math::Vec3 *x[], const Box &box,
     return false;
   }
 
-  r_da = *x[d] - *x[a];
-/* Apply PBC */
-  box.Pbc( &r_da );
+  r_da = x[d] - x[a];
+  /* Apply PBC */
+  box.Pbc( r_da );
 
   rda2 = r_da.norm2();
   if (rda2 > rc2) {
     return false;
   }
 
-  r_dh = *x[ d ] - *x[ h ];
-  box.Pbc( &r_dh );
+  r_dh = x[ d ] - x[ h ];
+  box.Pbc( r_dh );
   ca = cos_angle( r_dh, r_da );
   /* if angle is smaller, cos is larger */
   if (ca >= ccut) {

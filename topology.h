@@ -10,7 +10,7 @@ struct Box {
   Math::Vec3 hbox;
   Math::Vec3 mhbox;
 
-  void Pbc( Math::Vec3 *dx ) const;
+  void Pbc( Math::Vec3 &dx ) const;
 };
 
 Box InitBox( const Math::Matrix33 &mbox );
@@ -29,7 +29,7 @@ public:
 
 struct Frame {
   int Step;
-  std::vector<std::array<float, 3>> Coords;
+  std::vector<Math::Vec3> Coords;
 
   void Init(int natoms);
   bool Read(std::ifstream &fp);

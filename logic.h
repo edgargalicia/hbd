@@ -1,4 +1,5 @@
 #include "params.h"
+#include "hbmap.h"
 #include "topology.h"
 #include <string>
 #include <fstream>
@@ -9,6 +10,8 @@ private:
   Config conf;
   Topology topo;
   Frame frame;
+  Box box;
+  HBMap hbmap;
   std::ifstream infile;
 
 public:

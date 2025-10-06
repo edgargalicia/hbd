@@ -5,7 +5,7 @@ int main(int argc, char *argv[]) {
   try {
     Logic logic;
     logic.Init();
-    // logic.Run();
+    logic.Run();
     logic.Finish();
     return 0;
   }

@@ -14,7 +14,7 @@ private:
   std::string group2;
   int stride;
   float dt;
-  Math::Vec3 box_a, box_b, box_c;
+  Math::Vec3 axis_a, axis_b, axis_c;
   bool slabs;
   int nslabs;
 
@@ -25,7 +25,7 @@ public:
   int Size() const { return natoms; }
   std::string GetGroup1() const { return group1; }
   std::string GetGroup2() const { return group2; }
-  Math::Matrix33 Box() const { return Math::Matrix33 {box_a,box_b,box_c}; }
+  Math::Matrix33 Box() const { return Math::Matrix33 {axis_a,axis_b,axis_c}; }
 };
 
 class Acceptors {

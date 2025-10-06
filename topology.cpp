@@ -49,7 +49,7 @@ void Topology::Read(const Config &config, const Box &box) {
   for (size_t i = 0; i != coords.size()-1; ++i) {
     for (size_t j = i+1; j != coords.size(); ++j) {
       dist = coords[i] - coords[j];
-      box.Pbc( &dist );
+      box.Pbc( dist );
       if (dist.norm2() < rcBond2) {
         bonds.push_back(std::make_pair(i, j));
       }
@@ -99,13 +99,13 @@ Box InitBox( const Math::Matrix33 &mbox ) {
   return box;
 }
 
-void Box::Pbc( Math::Vec3 *dx ) const {
+void Box::Pbc( Math::Vec3 &dx ) const {
   for (int i = 2; i >= 0; i--) {
-    while (( *dx )[ i ] > hbox[ i ]) {
-      *dx -= mbox[i];
+    while (( dx )[ i ] > hbox[ i ]) {
+      dx -= mbox[i];
     }
-    while (( *dx )[ i ] <= mhbox[ i ]) {
-      *dx += mbox[i];
+    while (( dx )[ i ] <= mhbox[ i ]) {
+      dx += mbox[i];
     }
   }
 }
