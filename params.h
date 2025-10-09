@@ -15,8 +15,6 @@ private:
   int stride;
   float dt;
   Math::Vec3 axis_a, axis_b, axis_c;
-  bool slabs;
-  int nslabs;
 
 public:
   Config(std::string fname);
@@ -28,6 +26,8 @@ public:
   Math::Matrix33 Box() const { return Math::Matrix33 {axis_a,axis_b,axis_c}; }
 };
 
+class Frame;
+void Select( std::vector<int> &list, const Frame &frame, float za = 10, float zb = 16 );
 class Acceptors {
   // static std::vector<std::string> acc;
   std::vector<int> atoms;

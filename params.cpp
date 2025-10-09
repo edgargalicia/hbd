@@ -1,70 +1,57 @@
 #include "params.h"
+#include "topology.h"
 
 #include <fstream>
 #include <iostream>
 #include <ostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 Config::Config(std::string filename) {
-  std::ifstream ifile;
+  std::ifstream ifile(filename);
 
-  ifile.open(filename);
   if (!ifile.is_open()) {
-    std::cerr << "File not open\n";
+    throw std::runtime_error("Config file not found!");
   }
 
   std::string line;
+  std::string key;
+  std::unordered_map<std::string, std::string> kv;
 
-  std::getline(ifile, line);
-  fname = line;
-
-  std::getline(ifile, line);
-  natoms = std::stoi(line);
-
-  std::getline(ifile, line);
-  ntypes = std::stoi(line);
-
-  for (size_t i = 0; i != ntypes; ++i) {
-    std::getline(ifile, line);
-    atomtypes.push_back(line);
-  }
-
-  std::getline(ifile, line);
-  group1 = line;
-
-  std::getline(ifile, line);
-  group2 = line;
-
-  std::getline(ifile, line);
-  stride = std::stoi(line);
-
-  std::getline(ifile, line);
-  dt = std::stof(line);
-
-  std::getline(ifile, line);
-  std::istringstream iss(line);
-  iss >> axis_a[0] >> axis_a[1] >> axis_a[2];
-
-  std::getline(ifile, line);
-  iss.clear();
-  iss.str(line);
-  iss >> axis_b[0] >> axis_b[1] >> axis_b[2];
-
-  std::getline(ifile, line);
-  iss.clear();
-  iss.str(line);
-  iss >> axis_c[0] >> axis_c[1] >> axis_c[2];
-
-  std::getline(ifile, line);
-  slabs = std::stoi(line);
-
-  if (slabs == true) {
-    std::getline(ifile, line);
-    nslabs = std::stoi(line);
+  while (std::getline(ifile, line)) {
+    if (line.empty() || line[0] == '#') continue;
+    std::istringstream iss(line);
+    iss >> key;
+    std::string rest;
+    std::getline(iss, rest);
+    if (!rest.empty() && rest[0] == ' ') rest.erase(0,1);
+    kv[key] = rest;
   }
 
   ifile.close();
+
+  fname = kv.at("filename");
+  natoms = std::stoi(kv.at("natoms"));
+  stride = std::stoi(kv.at("stride"));
+  dt = std::stof(kv.at("dt"));
+  group1 = kv.at("group1");
+  group2 = kv.at("group2");
+
+  std::istringstream iss(kv.at("atomtypes"));
+  std::string type;
+  while(iss >> type) atomtypes.push_back(type);
+
+  iss.clear();
+  iss.str(kv.at("axis-a"));
+  iss >> axis_a;
+  iss.clear();
+  iss.str(kv.at("axis-b"));
+  iss >> axis_b;
+  iss.clear();
+  iss.str(kv.at("axis-c"));
+  iss >> axis_c;
 }
 
 // void Density(const Frame &frame, const std::string &atomname, int nslabs) {
@@ -81,6 +68,19 @@ Config::Config(std::string filename) {
 //     std::cout << i << ' ' << dens[i] << '\n';
 //   }
 // }
+
+void Select( std::vector<int> &list, const Frame &frame, float za, float zb) {
+
+  list.clear();
+  for (size_t i = 0; i != frame.Coords.size(); ++i) {
+
+    if (frame.Coords[i][0] > za && frame.Coords[i][0] < zb) {
+      list.push_back(i);
+    }
+  }
+
+  // std::cout << "Range list: " << list.size() << "\n";
+}
 
 void Config::Print() {
   std::cout << "Config file\n\n";
@@ -99,10 +99,6 @@ void Config::Print() {
   std::cout << "b-axis: " << axis_b << '\n';
 
   std::cout << "c-axis: " << axis_c << '\n';
-
-  if (slabs == true) {
-    std::cout << "nslabs: " << nslabs << '\n';
-  }
 }
 
 std::vector<int> String2IntList(const std::string &str) {
