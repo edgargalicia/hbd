@@ -3,7 +3,7 @@
 #include <Math/Matrix.h>
 #include <Math/Vectors.h>
 #include <iostream>
-#include <unordered_set>
+#include <utility>
 
 bool isProton(const std::string& name) {
     return name[0] == 'h';
@@ -56,9 +56,8 @@ float cos_angle( const Math::Vec3 a, const Math::Vec3 b ) {
   return cosval;
 }
 
-HBMap::HBMap(const std::string &str, const Topology &topo) {
-  auto preList = String2IntList(str);
-  for(auto var : preList) {
+HBMap::HBMap(const std::vector<int> &list, const Topology &topo) {
+  for(auto var : list) {
     if (isAcceptor(topo.AtomName()[var])) {
       acceptors.push_back(var);
     }
@@ -134,17 +133,17 @@ void HBMap::Print() {
   // std::cout << "Tri-Protons size: " << tri << '\n';
 }
 
-int isHBonded( int d, int h, int a, std::vector<Math::Vec3> &x, const Box &box,
+bool isHBonded( int don, int prot, int acc, std::vector<Math::Vec3> &x, const Box &box,
               float &d_ha, float &ang ) {
   float rda2;
   float ca;
   Math::Vec3 r_da, r_dh;
 
-  if (d == a) {
+  if (don == acc) {
     return false;
   }
 
-  r_da = x[d] - x[a];
+  r_da = x[don] - x[acc];
   /* Apply PBC */
   box.Pbc( r_da );
 
@@ -153,7 +152,7 @@ int isHBonded( int d, int h, int a, std::vector<Math::Vec3> &x, const Box &box,
     return false;
   }
 
-  r_dh = x[ d ] - x[ h ];
+  r_dh = x[ don ] - x[ prot ];
   box.Pbc( r_dh );
   ca = cos_angle( r_dh, r_da );
   /* if angle is smaller, cos is larger */
@@ -165,6 +164,59 @@ int isHBonded( int d, int h, int a, std::vector<Math::Vec3> &x, const Box &box,
   return false;
 }
 
+void PrintTimeSeries( std::ofstream &fp, int acc, int don, int prot, float d_ha, float ang ) {
+  fp << acc << " - " << don << " : " << prot << " dist: " << d_ha << " ang: " << ang/3.1416*180 << '\n';
+}
+
+void PrintStats( std::ofstream &fp, int hbond, int intra1, int intra2, int inter, const std::unordered_set<int> &activeAcceptors, const std::unordered_set<int> &activeDonors, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set ) {
+  fp << "No. H-Bonds: " << hbond << '\n';
+  fp << "No. intra 1 H-Bonds: " << intra1 << '\n';
+  fp << "No. intra 2 H-Bonds: " << intra2 << '\n';
+  fp << "No. inter H-Bonds: " << inter << '\n';
+  fp << "Active acceptors: " << activeAcceptors.size() << '\n';
+  fp << "Active donors: "   << activeDonors.size() << '\n';
+
+    int group1Donors = 0, group1Acceptors = 0;
+    int group2Donors = 0, group2Acceptors = 0;
+
+    for (int d : activeDonors) {
+      if (group1Set.count(d)) ++group1Donors;
+      if (group2Set.count(d)) ++group2Donors;
+    }
+
+    for (int a : activeAcceptors) {
+      if (group1Set.count(a)) ++group1Acceptors;
+      if (group2Set.count(a)) ++group2Acceptors;
+    }
+
+    fp << "Group1 donors in H-bonds: " << group1Donors << '\n';
+    fp << "Group1 acceptors in H-bonds: " << group1Acceptors << '\n';
+    fp << "Group2 donors in H-bonds: " << group2Donors << '\n';
+    fp << "Group2 acceptors in H-bonds: " << group2Acceptors << '\n';
+}
+
+void addBondPresence(std::unordered_map<BondKey, std::vector<int>, BondKeyHash> &bonds,
+                     int acc, int don, int frame ) {
+  // if (acc > don) std::swap(acc, don);
+  BondKey key {acc, don};
+  bonds[key].push_back(frame);
+}
+
+std::unordered_map<BondKey, double, BondKeyHash> computeBondPresencePercentages(
+  const std::unordered_map<BondKey, std::vector<int>, BondKeyHash> &bonds, int totalFrames) {
+
+  std::unordered_map<BondKey, double, BondKeyHash> percentages;
+
+  for (const auto &entry : bonds) {
+    const BondKey &key = entry.first;
+    const auto &frames = entry.second;
+
+    double percentage = (100.0 * frames.size()) / static_cast<int>(totalFrames);
+    percentages[key] = percentage;
+  }
+
+  return percentages;
+}
 // void read_acceptors( const std::string &str, HBData &hb ) {
 //   std::stringstream ss( str );
 //   std::vector<int> arr;

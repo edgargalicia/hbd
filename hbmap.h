@@ -1,6 +1,9 @@
+#include <fstream>
+#include <functional>
 #include <params.h>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class Topology;
@@ -14,7 +17,7 @@ private:
 
 public:
   HBMap() = default;
-  HBMap(const std::string &str, const Topology &topo);
+  HBMap(const std::vector<int> &list, const Topology &topo);
   ~HBMap() = default;
   int TotalProtons() const;
   void Print();
@@ -32,4 +35,27 @@ std::vector<int> Match(const std::vector<int> &atomList, const Topology &topolog
 
 class Vec3;
 class Box;
-int isHBonded( int d, int h, int a, std::vector<Math::Vec3> &x, const Box &box, float &d_ha, float &ang );
+bool isHBonded( int don, int prot, int acc, std::vector<Math::Vec3> &x, const Box &box, float &d_ha, float &ang );
+void PrintTimeSeries( std::ofstream &fp, int acc, int don, int prot, float d_ha, float ang );
+void PrintStats( std::ofstream &fp, int hbond, int intra1, int intra2, int inter, const std::unordered_set<int> &activeAcceptors, const std::unordered_set<int> &activeDonors, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set );
+
+struct BondKey {
+  int acceptor;
+  int donor;
+
+  bool operator==(const BondKey &other) const {
+    return acceptor == other.acceptor && donor == other.donor;
+  }
+};
+
+struct BondKeyHash {
+  std::size_t operator()(const BondKey &key) const noexcept {
+    return std::hash<int>()(key.acceptor) ^ (std::hash<int>()(key.donor) << 1);
+  }
+};
+
+void addBondPresence(std::unordered_map<BondKey, std::vector<int>, BondKeyHash> &bonds,
+                     int acc, int don, int frame );
+
+std::unordered_map<BondKey, double, BondKeyHash> computeBondPresencePercentages(
+  const std::unordered_map<BondKey, std::vector<int>, BondKeyHash> &bonds, int totalFrames);
