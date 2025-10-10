@@ -54,8 +54,24 @@ struct BondKeyHash {
   }
 };
 
-void addBondPresence(std::unordered_map<BondKey, std::vector<int>, BondKeyHash> &bonds,
-                     int acc, int don, int frame );
+enum class BondType { Intra1, Intra2, Inter};
+
+struct BondInfo {
+  BondKey key;
+  BondType type;
+};
+
+void addBondPresence(std::unordered_map<BondKey, std::vector<int>, BondKeyHash> &bondPresence,
+                     std::unordered_map<BondKey, BondType, BondKeyHash> &bondTypeMap,
+                     int acc, int don, int frame,
+                     const std::unordered_set<int> &group1Set,
+                     const std::unordered_set<int> &group2Set);
 
 std::unordered_map<BondKey, double, BondKeyHash> computeBondPresencePercentages(
   const std::unordered_map<BondKey, std::vector<int>, BondKeyHash> &bonds, int totalFrames);
+
+struct GroupActivity {
+  int g1Don = 0, g1Acc = 0, g2Don = 0, g2Acc = 0;
+};
+
+GroupActivity CountGroupActivity(const std::unordered_set<int> &activeAcceptors, const std::unordered_set<int> &activeDonors, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set);

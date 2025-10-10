@@ -115,22 +115,6 @@ void HBMap::Print() {
   std::cout << "Acceptors size: " << acceptors.size() << '\n';
   std::cout << "Donors size: " << donors.size() << '\n';
   std::cout << "Protons size: " << TotalProtons() << '\n';
-
-  // int mono = 0;
-  // int di = 0;
-  // int tri = 0;
-  // for(const auto &var : donorToProtons) {
-  //   if (var.second.size() == 1) {
-  //     mono++;
-  //   } else if (var.second.size() == 2) {
-  //     di++;
-  //   } else {
-  //     tri++;
-  //   }
-  // }
-  // std::cout << "Mono-Protons size: " << mono << '\n';
-  // std::cout << "Di-Protons size: " << di << '\n';
-  // std::cout << "Tri-Protons size: " << tri << '\n';
 }
 
 bool isHBonded( int don, int prot, int acc, std::vector<Math::Vec3> &x, const Box &box,
@@ -168,38 +152,55 @@ void PrintTimeSeries( std::ofstream &fp, int acc, int don, int prot, float d_ha,
   fp << acc << " - " << don << " : " << prot << " dist: " << d_ha << " ang: " << ang/3.1416*180 << '\n';
 }
 
-void PrintStats( std::ofstream &fp, int hbond, int intra1, int intra2, int inter, const std::unordered_set<int> &activeAcceptors, const std::unordered_set<int> &activeDonors, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set ) {
-  fp << "No. H-Bonds: " << hbond << '\n';
-  fp << "No. intra 1 H-Bonds: " << intra1 << '\n';
-  fp << "No. intra 2 H-Bonds: " << intra2 << '\n';
-  fp << "No. inter H-Bonds: " << inter << '\n';
-  fp << "Active acceptors: " << activeAcceptors.size() << '\n';
-  fp << "Active donors: "   << activeDonors.size() << '\n';
+GroupActivity CountGroupActivity(const std::unordered_set<int> &activeAcceptors, const std::unordered_set<int> &activeDonors, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set) {
+  GroupActivity g;
+  for (int a : activeAcceptors) {
+    if (group1Set.count(a)) ++g.g1Acc;
+    if (group2Set.count(a)) ++g.g2Acc;
+  }
 
-    int group1Donors = 0, group1Acceptors = 0;
-    int group2Donors = 0, group2Acceptors = 0;
+  for (int d : activeDonors) {
+    if (group1Set.count(d)) ++g.g1Don;
+    if (group2Set.count(d)) ++g.g2Don;
+  }
 
-    for (int d : activeDonors) {
-      if (group1Set.count(d)) ++group1Donors;
-      if (group2Set.count(d)) ++group2Donors;
-    }
-
-    for (int a : activeAcceptors) {
-      if (group1Set.count(a)) ++group1Acceptors;
-      if (group2Set.count(a)) ++group2Acceptors;
-    }
-
-    fp << "Group1 donors in H-bonds: " << group1Donors << '\n';
-    fp << "Group1 acceptors in H-bonds: " << group1Acceptors << '\n';
-    fp << "Group2 donors in H-bonds: " << group2Donors << '\n';
-    fp << "Group2 acceptors in H-bonds: " << group2Acceptors << '\n';
+  return g;
 }
 
-void addBondPresence(std::unordered_map<BondKey, std::vector<int>, BondKeyHash> &bonds,
-                     int acc, int don, int frame ) {
-  // if (acc > don) std::swap(acc, don);
+void PrintStats( std::ofstream &fp, int hbond, int intra1, int intra2, int inter, const std::unordered_set<int> &activeAcceptors, const std::unordered_set<int> &activeDonors, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set ) {
+
+  auto g = CountGroupActivity(activeAcceptors, activeDonors, group1Set, group2Set);
+
+  fp << std::left
+     << std::setw(12) << hbond
+     << std::setw(12) << intra1
+     << std::setw(12) << intra2
+     << std::setw(12) << inter
+     << std::setw(12) << activeAcceptors.size()
+     << std::setw(12) << activeDonors.size()
+     << std::setw(12) << g.g1Don
+     << std::setw(12) << g.g1Acc
+     << std::setw(12) << g.g2Don
+     << std::setw(12) << g.g2Acc
+     << '\n';
+}
+
+void addBondPresence(std::unordered_map<BondKey, std::vector<int>, BondKeyHash> &bondPresence,
+                     std::unordered_map<BondKey, BondType, BondKeyHash> &bondTypeMap,
+                     int acc, int don, int frame,
+                     const std::unordered_set<int> &group1Set,
+                     const std::unordered_set<int> &group2Set) {
   BondKey key {acc, don};
-  bonds[key].push_back(frame);
+  bondPresence[key].push_back(frame);
+
+  if (bondTypeMap.find(key) == bondTypeMap.end()) {
+    if (group1Set.count(acc) && group1Set.count(don))
+      bondTypeMap[key] = BondType::Intra1;
+    if (group2Set.count(acc) && group2Set.count(don))
+      bondTypeMap[key] = BondType::Intra2;
+    else
+      bondTypeMap[key] = BondType::Inter;
+  }
 }
 
 std::unordered_map<BondKey, double, BondKeyHash> computeBondPresencePercentages(
