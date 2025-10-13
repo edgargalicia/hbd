@@ -61,22 +61,15 @@ void Logic::Run() {
   size_t linesPerFrame = conf.Size()+2;
   size_t totalFrames = totalLines / linesPerFrame;
 
-  int hbond;
-  int intra1;
-  int intra2;
-  int inter;
-  std::unordered_set<int> activeAcceptors;
-  std::unordered_set<int> activeDonors;
-  float d_ha;
-  float ang;
+  HBGeometry hbg;
   std::cout << "\tAssess presence of bonds\n";
   std::cout << "\tGather statistics\n";
   std::vector<int> sel;
 
   auto group1 = String2IntList( conf.GetGroup1() );
   auto group2 = String2IntList( conf.GetGroup2() );
-  std::unordered_set<int> group1Set(group1.begin(), group1.end());
-  std::unordered_set<int> group2Set(group2.begin(), group2.end());
+  std::unordered_set<int> group1Set{std::unordered_set<int> (group1.begin(), group1.end())};
+  std::unordered_set<int> group2Set{std::unordered_set<int> (group2.begin(), group2.end())};
 
   std::ofstream fpStats("stats.txt");
   fpStats << std::left
@@ -92,7 +85,7 @@ void Logic::Run() {
     << std::setw(12) << "Group2 acc"
     << '\n';
 
-  std::unordered_map<BondKey, std::vector<int>, BondKeyHash> bond_presence;
+  std::unordered_map<BondPair, std::vector<int>, BondKeyHash> bond_presence;
   int total_hbond = 0;
   int total_intra1 = 0;
   int total_intra2 = 0;
@@ -103,61 +96,61 @@ void Logic::Run() {
   int totalGroup1Acceptors = 0;
   int totalGroup2Donors = 0;
   int totalGroup2Acceptors = 0;
-  std::unordered_map<BondKey, BondType, BondKeyHash> bondTypeMap;
+  std::unordered_map<BondPair, BondType, BondKeyHash> bondTypeMap;
 
+  HBondStats hbs;
   size_t processedFrames = 0;
   auto startTime = std::chrono::steady_clock::now();
+
+  HBBinner hbbin;
 
   while (frame.Read(infile)) {
     ++processedFrames;
   // for (size_t i = 0; i != 10; ++i) {
   //   frame.Read(infile);
-    hbond = 0;
-    intra1 = 0;
-    intra2 = 0;
-    inter = 0;
-    activeAcceptors.clear();
-    activeDonors.clear();
-    
-    Select(sel, frame);
+    hbs.reset();
+    Select(sel, frame, conf.getZa(), conf.getZb());
     hbmap = HBMap(sel, topo);
 
     for(auto acc : hbmap.getAcceptors()) {
       for(const auto &donorKV : hbmap.getDonUno()) {
         const int &don = donorKV.first;
         for(const auto &prot : donorKV.second) {
-          if ( isHBonded(don, prot, acc, frame.Coords, box, d_ha, ang)  ) {
-            addBondPresence(bond_presence, bondTypeMap, acc, don, frame.Step, group1Set, group2Set);
+          BondAtoms atoms{acc, don, prot};
+          HBondContext ctx{frame.Coords, box};
+          if ( isHBonded(atoms, ctx, hbg) ) {
+            hbbin.add(hbg);
+            addBondPresence(bond_presence, bondTypeMap, atoms, frame.Step, group1Set, group2Set);
 
             if (group1Set.count(acc) && group1Set.count(don)) {
-              ++intra1;
+              ++hbs.intra1;
               total_intra1++;
             } else if (group2Set.count(acc) && group2Set.count(don)) {
-              ++intra2;
+              ++hbs.intra2;
               total_intra2++;
             } else {
-              ++inter;
+              ++hbs.inter;
               ++total_inter;
             }
 
-            activeAcceptors.insert(acc);
-            activeDonors.insert(don);
-            ++hbond;
+            hbs.activeAcceptors.insert(acc);
+            hbs.activeDonors.insert(don);
+            ++hbs.hbond;
             total_hbond++;
           }
         }
       }
     }
 
-    auto g = CountGroupActivity(activeDonors, activeAcceptors, group1Set, group2Set);
+    auto g = CountGroupActivity(hbs.activeDonors, hbs.activeAcceptors, group1Set, group2Set);
     totalGroup1Donors += g.g1Don;
     totalGroup1Acceptors += g.g1Acc;
     totalGroup2Donors += g.g2Don;
     totalGroup2Acceptors += g.g2Acc;
-    totalActiveAcceptors += activeAcceptors.size();
-    totalActiveDonors += activeDonors.size();
+    totalActiveAcceptors += hbs.activeAcceptors.size();
+    totalActiveDonors += hbs.activeDonors.size();
 
-    PrintStats(fpStats, hbond, intra1, intra2, inter, activeAcceptors, activeDonors, group1Set, group2Set);
+    PrintStats(fpStats,hbs,group1Set,group2Set);
 
     if (frame.Step % 100 == 0) {
       // std::cout << "Frame step: " << frame.Step << '\r' << std::flush;
@@ -185,14 +178,14 @@ void Logic::Run() {
                << std::setw(12) << "BondID"
                << '\n';
 
-  std::unordered_map<BondKey, int, BondKeyHash> bondIDMap;
+  std::unordered_map<BondPair, int, BondKeyHash> bondIDMap;
   int bondID = 0;
   for (const auto &entry : percentages) {
     bondIDMap[entry.first] = ++bondID;
   }
 
   for (const auto &entry : bond_presence) {
-    const BondKey &bond = entry.first;
+    const BondPair &bond = entry.first;
     auto it = bondIDMap.find(bond);
     if (it == bondIDMap.end()) continue;
 
@@ -251,6 +244,9 @@ void Logic::Run() {
   fpBondStats << "#   Group2 donors: " << totalGroup2Donors / static_cast<double>(frame.Step) << '\n';
   fpBondStats.close();
   fpStats.close();
+  std::ofstream fpBin("bins.txt");
+  hbbin.print(fpBin);
+  fpBin.close();
 }
 
 void Logic::Finish() {

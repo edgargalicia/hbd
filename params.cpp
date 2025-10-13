@@ -38,6 +38,8 @@ Config::Config(std::string filename) {
   dt = std::stof(kv.at("dt"));
   group1 = kv.at("group1");
   group2 = kv.at("group2");
+  za = std::stof(kv.at("za"));
+  zb = std::stof(kv.at("zb"));
 
   std::istringstream iss(kv.at("atomtypes"));
   std::string type;
@@ -52,34 +54,6 @@ Config::Config(std::string filename) {
   iss.clear();
   iss.str(kv.at("axis-c"));
   iss >> axis_c;
-}
-
-// void Density(const Frame &frame, const std::string &atomname, int nslabs) {
-//   auto &atoms {frame.coords};
-//   int slab;
-//   std::vector<int> dens(nslabs);
-//   for(size_t i = 0; i != atoms.size(); ++i) {
-//     if (atomname == atoms[i].name) {
-//       slab = static_cast<int>(atoms[i].rx[2]);
-//       dens[slab]++;
-//     }
-//   }
-//   for (size_t i = 0; i != dens.size(); ++i) {
-//     std::cout << i << ' ' << dens[i] << '\n';
-//   }
-// }
-
-void Select( std::vector<int> &list, const Frame &frame, float za, float zb) {
-
-  list.clear();
-  for (size_t i = 0; i != frame.Coords.size(); ++i) {
-
-    if (frame.Coords[i][0] > za && frame.Coords[i][0] < zb) {
-      list.push_back(i);
-    }
-  }
-
-  // std::cout << "Range list: " << list.size() << "\n";
 }
 
 void Config::Print() {
@@ -99,6 +73,8 @@ void Config::Print() {
   std::cout << "b-axis: " << axis_b << '\n';
 
   std::cout << "c-axis: " << axis_c << '\n';
+
+  std::cout << "range: ( " << za << " - " << zb << " )\n";
 }
 
 std::vector<int> String2IntList(const std::string &str) {
@@ -127,13 +103,4 @@ std::vector<int> String2IntList(const std::string &str) {
   }
 
   return list;
-}
-
-
-
-void Acceptors::Print() {
-  std::cout << "Atoms in group: " << atoms.size() << '\n';
-  for (auto var : atoms) {
-    std::cout << var << '\n';
-  }
 }

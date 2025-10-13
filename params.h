@@ -14,6 +14,8 @@ private:
   std::string group2;
   int stride;
   float dt;
+  float za;
+  float zb;
   Math::Vec3 axis_a, axis_b, axis_c;
 
 public:
@@ -23,18 +25,9 @@ public:
   int Size() const { return natoms; }
   std::string GetGroup1() const { return group1; }
   std::string GetGroup2() const { return group2; }
+  float getZa() const { return za; }
+  float getZb() const { return zb; }
   Math::Matrix33 Box() const { return Math::Matrix33 {axis_a,axis_b,axis_c}; }
 };
-
-class Frame;
-void Select( std::vector<int> &list, const Frame &frame, float za = 10, float zb = 16 );
-class Acceptors {
-  // static std::vector<std::string> acc;
-  std::vector<int> atoms;
-
-  void Print();
-};
-
-std::vector<int> ParseList(const std::vector<int> &list);
 
 std::vector<int> String2IntList(const std::string &str);

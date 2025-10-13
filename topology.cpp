@@ -109,3 +109,14 @@ void Box::Pbc( Math::Vec3 &dx ) const {
     }
   }
 }
+
+void Select( std::vector<int> &list, const Frame &frame, float za, float zb) {
+
+  list.clear();
+  for (size_t i = 0; i != frame.Coords.size(); ++i) {
+
+    if (frame.Coords[i][0] > za && frame.Coords[i][0] < zb) {
+      list.push_back(i);
+    }
+  }
+}

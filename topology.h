@@ -34,3 +34,5 @@ struct Frame {
   void Init(int natoms);
   bool Read(std::ifstream &fp);
 };
+
+void Select( std::vector<int> &list, const Frame &frame, float za , float zb );
