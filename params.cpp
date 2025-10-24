@@ -32,14 +32,22 @@ Config::Config(std::string filename) {
 
   ifile.close();
 
-  fname = kv.at("filename");
-  natoms = std::stoi(kv.at("natoms"));
-  stride = std::stoi(kv.at("stride"));
+  auto parseKey = [&](const std::string &key, const std::string &def) -> std::string {
+    auto it = kv.find(key);
+    return (it != kv.end()) ? it->second : def;
+  };
+
+  fname = parseKey("filename", "XYZCAR");
+  natoms = std::stoul(kv.at("natoms"));
+  stride = std::stoul(parseKey("stride", "1"));
   dt = std::stof(kv.at("dt"));
   group1 = kv.at("group1");
   group2 = kv.at("group2");
   za = std::stof(kv.at("za"));
   zb = std::stof(kv.at("zb"));
+  bframe = std::stoi(parseKey("bframe", "0"));
+  eframe = std::stoi(parseKey("eframe", "-1"));
+  axis = std::stoul(kv.at("axis"));
 
   std::istringstream iss(kv.at("atomtypes"));
   std::string type;
@@ -75,6 +83,8 @@ void Config::Print() {
   std::cout << "c-axis: " << axis_c << '\n';
 
   std::cout << "range: ( " << za << " - " << zb << " )\n";
+
+  std::cout << "Normal axis: " << axis << '\n';
 }
 
 std::vector<int> String2IntList(const std::string &str) {

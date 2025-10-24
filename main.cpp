@@ -1,7 +1,7 @@
 #include "logic.h"
 #include <exception>
 
-int main(int argc, char *argv[]) {
+int main() {
   try {
     Logic logic;
     logic.Init();

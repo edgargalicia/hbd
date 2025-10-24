@@ -15,7 +15,7 @@ private:
   std::ifstream infile;
 
 public:
-  Logic();
+  Logic() : filename{"input.dat"}, conf{filename} {}
   void Init();
   void Run();
   void Finish();

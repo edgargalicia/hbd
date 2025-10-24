@@ -110,9 +110,9 @@ struct HBBinner {
   }
 };
 
-class Box;
+struct Box;
 struct HBondContext {
-    std::vector<Math::Vec3> &coords;
+    const std::vector<Math::Vec3> &coords;
     const Box &box;
 };
 

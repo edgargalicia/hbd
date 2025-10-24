@@ -23,7 +23,9 @@ void Topology::Print() {
 
 }
 
-void Topology::Read(const Config &config, const Box &box) {
+// void Topology::Read(const Config &config, const Box &box) {
+Topology ReadTopology(const Config &config, const Box &box) {
+  Topology top;
   std::ifstream fp(config.TrajName());
   if ( !fp.is_open() ) {
     throw std::runtime_error( "Failed to open topology file: " + config.TrajName() );
@@ -40,7 +42,7 @@ void Topology::Read(const Config &config, const Box &box) {
     std::getline(fp, line);
     std::istringstream iss(line);
     iss >> atomname >> coord;
-    atomNames.push_back(atomname);
+    top.PushAtom(atomname);
     coords.push_back(coord);
   }
 
@@ -51,16 +53,17 @@ void Topology::Read(const Config &config, const Box &box) {
       dist = coords[i] - coords[j];
       box.Pbc( dist );
       if (dist.norm2() < rcBond2) {
-        bonds.push_back(std::make_pair(i, j));
+        top.PushBond(i, j);
       }
     }
   }
   fp.close();
+  return top;
 }
 
 void Frame::Init(int natoms) {
-  Step = 0;
-  Coords.resize(natoms);
+  step = 0;
+  coords.resize(natoms);
 }
 
 bool Frame::Read(std::ifstream &fp) {
@@ -73,7 +76,7 @@ bool Frame::Read(std::ifstream &fp) {
   }
 
   std::string dummy;
-  for (auto &atom : Coords) {
+  for (auto &atom : coords) {
     if ( !std::getline(fp, line) ) {
       throw std::runtime_error("Unexpected EOF inside frame");
     }
@@ -82,7 +85,7 @@ bool Frame::Read(std::ifstream &fp) {
       throw std::runtime_error("Malformed line in frame");
     }
   }
-  ++Step;
+  ++step;
   return true;
 }
 
@@ -110,12 +113,12 @@ void Box::Pbc( Math::Vec3 &dx ) const {
   }
 }
 
-void Select( std::vector<int> &list, const Frame &frame, float za, float zb) {
+void Select( std::vector<int> &list, const Frame &frame, float za, float zb, size_t axis) {
 
   list.clear();
-  for (size_t i = 0; i != frame.Coords.size(); ++i) {
+  for (size_t i = 0; i != frame.Size(); ++i) {
 
-    if (frame.Coords[i][0] > za && frame.Coords[i][0] < zb) {
+    if (frame.Coords()[i][axis] > za && frame.Coords()[i][axis] < zb) {
       list.push_back(i);
     }
   }
