@@ -5,7 +5,7 @@ using namespace std;
 namespace Math {
 
 float &Vec3::operator[](size_t i) { return r[i]; }
-const float Vec3::operator[](size_t i) const { return r[i]; }
+float Vec3::operator[](size_t i) const { return r[i]; }
 Vec3 &Vec3::operator+=(const Vec3 &v) {
   r[0] += v.r[0];
   r[1] += v.r[1];

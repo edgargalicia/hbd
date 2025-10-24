@@ -23,7 +23,7 @@ public:
   ~Vec3() = default;
 
   float &operator[](size_t i);
-  const float operator[](size_t i) const;
+  float operator[](size_t i) const;
   auto begin() { return r.begin(); }
   auto end()   { return r.end(); }
   auto begin() const { return r.cbegin(); }
