@@ -9,6 +9,16 @@
 #include <string>
 #include <unordered_map>
 
+Axis CharToAxis(char c) {
+    switch (c) {
+        case 'a': case 'A': case 'x': case 'X': return X;
+        case 'b': case 'B': case 'y': case 'Y': return Y;
+        case 'c': case 'C': case 'z': case 'Z': return Z;
+        default:
+            throw std::invalid_argument("Invalid axis character. Use a/b/c or x/y/z.");
+    }
+}
+
 Config::Config(std::string filename) {
   std::ifstream ifile(filename);
 
@@ -47,7 +57,8 @@ Config::Config(std::string filename) {
   zb = std::stof(kv.at("zb"));
   bframe = std::stoi(parseKey("bframe", "0"));
   eframe = std::stoi(parseKey("eframe", "-1"));
-  axis = std::stoul(kv.at("axis"));
+  std::string ax = kv.at("axis");
+  axis = CharToAxis(ax[0]);
 
   std::istringstream iss(kv.at("atomtypes"));
   std::string type;

@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 void Topology::Print() {
@@ -20,7 +21,22 @@ void Topology::Print() {
   for (const auto & frqAt : freqAtoms) {
     std::cout << frqAt.first << ": " << frqAt.second << '\n';
   }
+}
 
+void Topology::ComputeBonds(const std::vector<Math::Vec3> &coords, const Box &box) {
+  ClearBonds(); // You need to implement this
+  float rcBond2 = 1.3f * 1.3f;
+  Math::Vec3 dist;
+
+  for (size_t i = 0; i != coords.size() - 1; ++i) {
+    for (size_t j = i + 1; j != coords.size(); ++j) {
+      dist = coords[i] - coords[j];
+      box.Pbc(dist);
+      if (dist.norm2() < rcBond2) {
+        PushBond(i, j);
+      }
+    }
+  }
 }
 
 // void Topology::Read(const Config &config, const Box &box) {
@@ -46,19 +62,19 @@ Topology ReadTopology(const Config &config, const Box &box) {
     coords.push_back(coord);
   }
 
-  float rcBond2 = 1.3*1.3;
-  Math::Vec3 dist;
-  for (size_t i = 0; i != coords.size()-1; ++i) {
-    for (size_t j = i+1; j != coords.size(); ++j) {
-      dist = coords[i] - coords[j];
-      box.Pbc( dist );
-      if (dist.norm2() < rcBond2) {
-        top.PushBond(i, j);
-      }
-    }
-  }
+  top.ComputeBonds(coords, box);
   fp.close();
   return top;
+}
+
+void Topology::UpdateBonds(const Frame &frame, const Box &box) {
+  // Store previous bonds
+  std::vector<std::pair<int, int>> oldBonds = Bonds();
+
+  // Recompute bonds
+  ComputeBonds(frame.Coords(), box);
+
+  auto newBonds = Bonds();
 }
 
 void Frame::Init(int natoms) {
@@ -113,8 +129,7 @@ void Box::Pbc( Math::Vec3 &dx ) const {
   }
 }
 
-void Select( std::vector<int> &list, const Frame &frame, float za, float zb, size_t axis) {
-
+void Select( std::vector<int> &list, const Frame &frame, float za, float zb, Axis axis) {
   list.clear();
   for (size_t i = 0; i != frame.Size(); ++i) {
 

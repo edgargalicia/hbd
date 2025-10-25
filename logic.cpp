@@ -119,8 +119,9 @@ void Logic::Run() {
   for (int iframe = conf.Begin(); iframe != conf.End(); ++iframe) {
     frame.Read(infile);
     ++processedFrames;
+    topo.UpdateBonds(frame, box);
     hbs.reset();
-    Select(sel, frame, conf.getZa(), conf.getZb(), conf.Axis());
+    Select(sel, frame, conf.getZa(), conf.getZb(), conf.GetAxis());
     hbmap = HBMap(sel, topo);
 
     for(auto acc : hbmap.getAcceptors()) {

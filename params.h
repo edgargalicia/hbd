@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+enum Axis { X = 0, Y = 1, Z = 2 };
+
 class Config {
 private:
   std::string fname;
@@ -18,7 +20,7 @@ private:
   Math::Vec3 axis_a, axis_b, axis_c;
   int bframe;
   int eframe;
-  size_t axis;
+  Axis axis;
 
 public:
   Config(std::string fname);
@@ -33,7 +35,7 @@ public:
   int Begin() const { return bframe; }
   int End() const { return eframe; }
   void SeteFrames(int e) { eframe = e; }
-  size_t Axis() const { return axis; }
+  Axis GetAxis() const { return axis; }
 };
 
 std::vector<int> String2IntList(const std::string &str);

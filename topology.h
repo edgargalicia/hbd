@@ -15,22 +15,6 @@ struct Box {
 
 Box InitBox( const Math::Matrix33 &mbox );
 
-class Topology {
-private:
-  std::vector<std::string> atomNames;
-  std::vector<std::pair<int, int>> bonds;
-
-public:
-  // void Read(const Config &config, const Box &box);
-  void Print();
-  void PushAtom(const std::string &at) { atomNames.push_back(at); }
-  void PushBond(int i, int j) { bonds.push_back(std::make_pair(i, j)); }
-  std::vector<std::string> AtomName() const { return atomNames; }
-  std::vector<std::pair<int, int>> Bonds() const { return bonds; }
-};
-
-Topology ReadTopology(const Config &config, const Box &box);
-
 class Frame {
 private:
   int step;
@@ -44,4 +28,23 @@ public:
   const std::vector<Math::Vec3> &Coords() const { return coords; }
 };
 
-void Select( std::vector<int> &list, const Frame &frame, float za , float zb, size_t axis );
+void Select( std::vector<int> &list, const Frame &frame, float za , float zb, Axis axis );
+
+class Topology {
+private:
+  std::vector<std::string> atomNames;
+  std::vector<std::pair<int, int>> bonds;
+
+public:
+  // void Read(const Config &config, const Box &box);
+  void Print();
+  void PushAtom(const std::string &at) { atomNames.push_back(at); }
+  void PushBond(int i, int j) { bonds.push_back(std::make_pair(i, j)); }
+  std::vector<std::string> AtomName() const { return atomNames; }
+  std::vector<std::pair<int, int>> Bonds() const { return bonds; }
+  void ClearBonds() { bonds.clear(); }
+  void ComputeBonds(const std::vector<Math::Vec3> &coords, const Box &box);
+  void UpdateBonds(const Frame &frame, const Box &box);
+};
+
+Topology ReadTopology(const Config &config, const Box &box);
