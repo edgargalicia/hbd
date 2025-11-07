@@ -129,7 +129,7 @@ struct HBondStats {
 
 bool isHBonded( const BondAtoms &at, const HBondContext &ctx, HBGeometry &hbg );
 void PrintTimeSeries( std::ofstream &fp, int acc, int don, int prot, float d_ha, float ang );
-void PrintStats( std::ofstream &fp, const HBondStats &hbs, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set);
+void PrintStats( std::ofstream &fp, const float &dt, const HBondStats &hbs, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set);
 
 void addBondPresence(std::unordered_map<BondPair, std::vector<int>, BondKeyHash> &bondPresence,
                      std::unordered_map<BondPair, BondType, BondKeyHash> &bondTypeMap,

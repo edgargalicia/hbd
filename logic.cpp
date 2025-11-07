@@ -84,7 +84,8 @@ void Logic::Run() {
 
   std::ofstream fpStats("stats.txt");
   fpStats << std::left
-          << std::setw(12) << "# HBs"
+          << std::setw(12) << "# Time"
+          << std::setw(12) << "HBs"
           << std::setw(12) << "Intra HBs1"
           << std::setw(12) << "Intra HBs2"
           << std::setw(12) << "Inter HBs"
@@ -115,75 +116,77 @@ void Logic::Run() {
 
   HBBinner hbbin;
 
-  // while (frame.Read(infile)) {
   for (int iframe = conf.Begin(); iframe != conf.End(); ++iframe) {
     frame.Read(infile);
-    ++processedFrames;
-    topo.UpdateBonds(frame, box);
-    hbs.reset();
-    Select(sel, frame, conf.getZa(), conf.getZb(), conf.GetAxis());
-    hbmap = HBMap(sel, topo);
+    if ( frame.Step() % conf.Stride() == 0 ) {
+      ++processedFrames;
+      // std::cout << "Times: " << iframe << " - " << frame.Step() << " - " << processedFrames << " - " << frame.Step() % conf.Stride() << " - " << frame.Step()*conf.Dt() << " - " << (  - conf.Begin() )*conf.Dt() << '\n';
+      // std::cout << "Times: " << processedFrames << " - " << frame.Step()*conf.Dt() << " - " << ( frame.Step()-conf.Begin()-conf.Stride() )*conf.Dt() << '\n';
+      topo.UpdateBonds(frame, box);
+      hbs.reset();
+      Select(sel, frame, conf.getZa(), conf.getZb(), conf.GetAxis());
+      hbmap = HBMap(sel, topo);
 
-    for(auto acc : hbmap.getAcceptors()) {
-      for(const auto &donorKV : hbmap.getDonUno()) {
-        const int &don = donorKV.first;
-        for(const auto &prot : donorKV.second) {
-          BondAtoms atoms{{acc, don}, prot};
-          HBondContext ctx{frame.Coords(), box};
-          if ( isHBonded(atoms, ctx, hbg) ) {
-            hbbin.add(hbg);
-            addBondPresence(bond_presence, bondTypeMap, atoms, frame.Step(), group1Set, group2Set);
+      for(auto acc : hbmap.getAcceptors()) {
+        for(const auto &donorKV : hbmap.getDonUno()) {
+          const int &don = donorKV.first;
+          for(const auto &prot : donorKV.second) {
+            BondAtoms atoms{{acc, don}, prot};
+            HBondContext ctx{frame.Coords(), box};
+            if ( isHBonded(atoms, ctx, hbg) ) {
+              hbbin.add(hbg);
+              addBondPresence(bond_presence, bondTypeMap, atoms, frame.Step(), group1Set, group2Set);
 
-            if (group1Set.count(acc) && group1Set.count(don)) {
-              ++hbs.intra1;
-              total_intra1++;
-            } else if (group2Set.count(acc) && group2Set.count(don)) {
-              ++hbs.intra2;
-              total_intra2++;
-            } else {
-              ++hbs.inter;
-              ++total_inter;
+              if (group1Set.count(acc) && group1Set.count(don)) {
+                ++hbs.intra1;
+                total_intra1++;
+              } else if (group2Set.count(acc) && group2Set.count(don)) {
+                ++hbs.intra2;
+                total_intra2++;
+              } else {
+                ++hbs.inter;
+                ++total_inter;
+              }
+
+              hbs.activeAcceptors.insert(acc);
+              hbs.activeDonors.insert(don);
+              ++hbs.hbond;
+              total_hbond++;
             }
-
-            hbs.activeAcceptors.insert(acc);
-            hbs.activeDonors.insert(don);
-            ++hbs.hbond;
-            total_hbond++;
           }
         }
       }
-    }
 
-    auto g = CountGroupActivity(hbs.activeDonors, hbs.activeAcceptors, group1Set, group2Set);
-    totalGroup1Donors += g.g1Don;
-    totalGroup1Acceptors += g.g1Acc;
-    totalGroup2Donors += g.g2Don;
-    totalGroup2Acceptors += g.g2Acc;
-    totalActiveAcceptors += hbs.activeAcceptors.size();
-    totalActiveDonors += hbs.activeDonors.size();
+      auto g = CountGroupActivity(hbs.activeDonors, hbs.activeAcceptors, group1Set, group2Set);
+      totalGroup1Donors += g.g1Don;
+      totalGroup1Acceptors += g.g1Acc;
+      totalGroup2Donors += g.g2Don;
+      totalGroup2Acceptors += g.g2Acc;
+      totalActiveAcceptors += hbs.activeAcceptors.size();
+      totalActiveDonors += hbs.activeDonors.size();
 
-    PrintStats(fpStats,hbs,group1Set,group2Set);
+      PrintStats(fpStats,( frame.Step()-conf.Begin()-conf.Stride() )*conf.Dt(), hbs,group1Set,group2Set );
 
-    if (frame.Step() % 100 == 0) {
-      // std::cout << "Frame step: " << frame.Step << '\r' << std::flush;
+      if (frame.Step() % 100 == 0) {
 
-      auto now = std::chrono::steady_clock::now();
-      std::chrono::duration<double> elapsed = now - startTime;
-      double percent = 100.0 * processedFrames / ( conf.End() - conf.Begin() );
-      double estimatedTotalTime = elapsed.count() / (processedFrames / static_cast<double>(conf.End() - conf.Begin()));
-      double etaSeconds = estimatedTotalTime - elapsed.count();
-      int etaMin = static_cast<int>(etaSeconds) / 60;
-      int etaSec = static_cast<int>(etaSeconds) % 60;
+        auto now = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed = now - startTime;
+        double percent = 100.0 * processedFrames / ( ( conf.End() - conf.Begin() )/static_cast<double>(conf.Stride()) );
+        double estimatedTotalTime = elapsed.count() / (processedFrames / ( ( conf.End() - conf.Begin() )/static_cast<double>(conf.Stride()) ));
+        double etaSeconds = estimatedTotalTime - elapsed.count();
+        int etaMin = static_cast<int>(etaSeconds) / 60;
+        int etaSec = static_cast<int>(etaSeconds) % 60;
 
-      std::cout << "\rProcessed " << processedFrames << '/' << conf.End() - conf.Begin()
-                << " (" << std::fixed << std::setprecision(1) << percent << "%)"
-                << ", ETA: " << etaMin << "m " << etaSec << "s "
-                << std::flush;
+        std::cout << "\rProcessed " << processedFrames << '/' << ( conf.End() - conf.Begin() )/conf.Stride()
+                  << " (" << std::fixed << std::setprecision(1) << percent << "%)"
+                  << ", ETA: " << etaMin << "m " << etaSec << "s "
+                  << std::flush;
+      }
     }
   }
   std::cout << std::endl;
 
-  auto percentages = computeBondPresencePercentages(bond_presence, frame.Step());
+  auto percentages = computeBondPresencePercentages(bond_presence, processedFrames);
   std::ofstream fpTimeSeries("bond_timeseries.txt");
   fpTimeSeries << std::left
                << std::setw(12) << "# Frame"
@@ -203,7 +206,7 @@ void Logic::Run() {
 
     int id = it->second;
     for (int frameNum : entry.second) {
-      fpTimeSeries << std::setw(12) << frameNum
+      fpTimeSeries << std::setw(12) << std::fixed << std::setprecision(5) << ( frameNum-conf.Begin()-conf.Stride() )*conf.Dt()
                    << std::setw(12) << id
                    << '\n';
     }
@@ -242,18 +245,18 @@ void Logic::Run() {
   // fpBondStats << std::left
   //             << std::setw(12) << "Hbonds"
   fpBondStats << "\n\n";
-  fpBondStats << "# Hbonds: " << total_hbond / static_cast<double>(frame.Step()) << '\n';
-  fpBondStats << "# Intra1: " << total_intra1 / static_cast<double>(frame.Step()) << '\n';
-  fpBondStats << "# Intra2: " << total_intra2 / static_cast<double>(frame.Step()) << '\n';
-  fpBondStats << "# Inter: " << total_inter / static_cast<double>(frame.Step()) << '\n';
-  fpBondStats << "# Active Acceptors: " << totalActiveAcceptors / static_cast<double>(frame.Step()) << '\n';
-  fpBondStats << "# Active Donors: " << totalActiveDonors / static_cast<double>(frame.Step()) << '\n';
+  fpBondStats << "# Hbonds: " << total_hbond / static_cast<double>(processedFrames) << '\n';
+  fpBondStats << "# Intra1: " << total_intra1 / static_cast<double>(processedFrames) << '\n';
+  fpBondStats << "# Intra2: " << total_intra2 / static_cast<double>(processedFrames) << '\n';
+  fpBondStats << "# Inter: " << total_inter / static_cast<double>(processedFrames) << '\n';
+  fpBondStats << "# Active Acceptors: " << totalActiveAcceptors / static_cast<double>(processedFrames) << '\n';
+  fpBondStats << "# Active Donors: " << totalActiveDonors / static_cast<double>(processedFrames) << '\n';
   fpBondStats << '\n';
   fpBondStats << "# Average active donors per group per frame:\n";
-  fpBondStats << "#   Group1 acceptors: " << totalGroup1Acceptors / static_cast<double>(frame.Step()) << '\n';
-  fpBondStats << "#   Group1 donors: " << totalGroup1Donors / static_cast<double>(frame.Step()) << '\n';
-  fpBondStats << "#   Group2 acceptors: " << totalGroup2Acceptors / static_cast<double>(frame.Step()) << '\n';
-  fpBondStats << "#   Group2 donors: " << totalGroup2Donors / static_cast<double>(frame.Step()) << '\n';
+  fpBondStats << "#   Group1 acceptors: " << totalGroup1Acceptors / static_cast<double>(processedFrames) << '\n';
+  fpBondStats << "#   Group1 donors: " << totalGroup1Donors / static_cast<double>(processedFrames) << '\n';
+  fpBondStats << "#   Group2 acceptors: " << totalGroup2Acceptors / static_cast<double>(processedFrames) << '\n';
+  fpBondStats << "#   Group2 donors: " << totalGroup2Donors / static_cast<double>(processedFrames) << '\n';
   fpBondStats.close();
   fpStats.close();
   std::ofstream fpBin("bins.txt");

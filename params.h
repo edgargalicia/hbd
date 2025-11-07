@@ -23,19 +23,21 @@ private:
   Axis axis;
 
 public:
-  Config(std::string fname);
+  explicit Config(std::string fname);
   void Print();
   std::string TrajName() const { return fname; }
   size_t Size() const { return natoms; }
+  size_t Stride() const { return stride; }
   std::string GetGroup1() const { return group1; }
   std::string GetGroup2() const { return group2; }
   float getZa() const { return za; }
   float getZb() const { return zb; }
-  Math::Matrix33 Box() const { return Math::Matrix33 {axis_a,axis_b,axis_c}; }
+  Math::Matrix33 Box() const { return Math::Matrix33{axis_a, axis_b, axis_c}; }
   int Begin() const { return bframe; }
   int End() const { return eframe; }
   void SeteFrames(int e) { eframe = e; }
   Axis GetAxis() const { return axis; }
+  float Dt() const { return dt; }
 };
 
 std::vector<int> String2IntList(const std::string &str);

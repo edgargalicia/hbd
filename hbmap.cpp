@@ -112,10 +112,11 @@ GroupActivity CountGroupActivity(const std::unordered_set<int> &activeAcceptors,
   return g;
 }
 
-void PrintStats( std::ofstream &fp, const HBondStats &hbs, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set) {
+void PrintStats( std::ofstream &fp, const float &dt, const HBondStats &hbs, const std::unordered_set<int> &group1Set, const std::unordered_set<int> &group2Set) {
   auto g = CountGroupActivity(hbs.activeAcceptors, hbs.activeDonors, group1Set, group2Set);
 
   fp << std::left
+     << std::setw(12) << std::fixed << std::setprecision(5) << dt
      << std::setw(12) << hbs.hbond
      << std::setw(12) << hbs.intra1
      << std::setw(12) << hbs.intra2
