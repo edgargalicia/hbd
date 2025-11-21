@@ -1,10 +1,10 @@
 #include "logic.h"
+#include "params.h"
 #include <Math/Matrix.h>
 #include <chrono>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <params.h>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
