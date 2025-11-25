@@ -4,6 +4,7 @@
 #include "Math/Vectors.h"
 #include <iostream>
 #include <utility>
+#include <iomanip>
 
 static inline bool isProton(const std::string& name) {
     return name[0] == 'h';
