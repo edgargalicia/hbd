@@ -1,6 +1,5 @@
 #include "logic.h"
 #include "params.h"
-#include <Math/Matrix.h>
 #include <chrono>
 #include <fstream>
 #include <iomanip>

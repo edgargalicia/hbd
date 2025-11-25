@@ -1,8 +1,7 @@
 #include "hbmap.h"
 #include "utils.h"
 #include "topology.h"
-#include <Math/Matrix.h>
-#include <Math/Vectors.h>
+#include "Math/Vectors.h"
 #include <iostream>
 #include <utility>
 
