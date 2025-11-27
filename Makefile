@@ -30,7 +30,7 @@ dirs:
 
 tags:
 	@if command -v $(CTAGS) >/dev/null 2>&1; then \
-		@echo "Updating ctags..."
+		echo "Updating ctags..."; \
 		$(CTAGS) $(CTAGS_FLAGS) -f $(CTAGS_FILE) $(SRC_DIRS); \
 	else \
 		echo "ctags not found; skipping tag generation."; \
