@@ -119,8 +119,6 @@ void Logic::Run() {
     frame.Read(infile);
     if ( frame.Step() % conf.Stride() == 0 ) {
       ++processedFrames;
-      // std::cout << "Times: " << iframe << " - " << frame.Step() << " - " << processedFrames << " - " << frame.Step() % conf.Stride() << " - " << frame.Step()*conf.Dt() << " - " << (  - conf.Begin() )*conf.Dt() << '\n';
-      // std::cout << "Times: " << processedFrames << " - " << frame.Step()*conf.Dt() << " - " << ( frame.Step()-conf.Begin()-conf.Stride() )*conf.Dt() << '\n';
       topo.UpdateBonds(frame, box);
       hbs.reset();
       Select(sel, frame, conf.getZa(), conf.getZb(), conf.GetAxis());

@@ -1,6 +1,8 @@
 #include "topology.h"
 #include "Math/Matrix.h"
 #include "Math/Vectors.h"
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -39,7 +41,6 @@ void Topology::ComputeBonds(const std::vector<Math::Vec3> &coords, const Box &bo
   }
 }
 
-// void Topology::Read(const Config &config, const Box &box) {
 Topology ReadTopology(const Config &config, const Box &box) {
   Topology top;
   std::ifstream fp(config.TrajName());
@@ -58,6 +59,10 @@ Topology ReadTopology(const Config &config, const Box &box) {
     std::getline(fp, line);
     std::istringstream iss(line);
     iss >> atomname >> coord;
+    std::transform(atomname.begin(), atomname.end(), atomname.begin(),
+                   [](unsigned char c) {
+                     return std::tolower(c);
+                   });
     top.PushAtom(atomname);
     coords.push_back(coord);
   }
