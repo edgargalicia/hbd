@@ -19,6 +19,10 @@ Axis CharToAxis(char c) {
     }
 }
 
+inline void stripCR(std::string &s) {
+  if (!s.empty() && s.back() == '\r') s.pop_back();
+}
+
 Config::Config(std::string filename) {
   std::ifstream ifile(filename);
 
@@ -31,12 +35,16 @@ Config::Config(std::string filename) {
   std::unordered_map<std::string, std::string> kv;
 
   while (std::getline(ifile, line)) {
+    stripCR(line);
+
     if (line.empty() || line[0] == '#') continue;
     std::istringstream iss(line);
     iss >> key;
     std::string rest;
     std::getline(iss, rest);
     if (!rest.empty() && rest[0] == ' ') rest.erase(0,1);
+
+    stripCR(rest);
     kv[key] = rest;
   }
 
